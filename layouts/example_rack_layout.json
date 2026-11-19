@@ -1,0 +1,132 @@
+{
+    "modules": [
+        {
+            "col": 0,
+            "file": "B-2500_-_1003.jpg",
+            "hp": 16,
+            "id": 27,
+            "row": 1,
+            "tower": 0
+        },
+        {
+            "col": 16,
+            "file": "B-S100_-_112_dual_vco.jpg",
+            "hp": 16,
+            "id": 28,
+            "row": 1,
+            "tower": 0
+        },
+        {
+            "col": 0,
+            "file": "B-S100_-_110_VCO_VCF_VCA.jpg",
+            "hp": 16,
+            "id": 29,
+            "row": 0,
+            "tower": 0
+        },
+        {
+            "col": 80,
+            "file": "B-cp1a-power-supply.jpg",
+            "hp": 4,
+            "id": 30,
+            "row": 2,
+            "tower": 0
+        },
+        {
+            "col": 16,
+            "file": "B-2500_-_1006.jpg",
+            "hp": 16,
+            "id": 31,
+            "row": 0,
+            "tower": 0
+        },
+        {
+            "col": 0,
+            "file": "B-960_sequencer.jpg",
+            "hp": 56,
+            "id": 32,
+            "row": 2,
+            "tower": 0
+        },
+        {
+            "col": 69,
+            "file": "rest-o-matic_v0.2_b.jpg",
+            "hp": 5,
+            "id": 33,
+            "row": 2,
+            "tower": 0
+        },
+        {
+            "col": 56,
+            "file": "ratchet-o-matic.jpg",
+            "hp": 8,
+            "id": 34,
+            "row": 2,
+            "tower": 0
+        },
+        {
+            "col": 64,
+            "file": "sequential-switch-o-matic.jpg",
+            "hp": 5,
+            "id": 35,
+            "row": 2,
+            "tower": 0
+        },
+        {
+            "col": 32,
+            "file": "chance-delay-o-matic.jpg",
+            "hp": 10,
+            "id": 36,
+            "row": 1,
+            "tower": 0
+        },
+        {
+            "col": 60,
+            "file": "B-S100_-_305-eq-mixer.jpg",
+            "hp": 24,
+            "id": 37,
+            "row": 0,
+            "tower": 0
+        },
+        {
+            "col": 42,
+            "file": "passive-mult-o-matic_MIAW.jpg",
+            "hp": 5,
+            "id": 38,
+            "row": 1,
+            "tower": 0
+        },
+        {
+            "col": 75,
+            "file": "scope-o-matic-two-in.jpg",
+            "hp": 5,
+            "id": 39,
+            "row": 2,
+            "tower": 0
+        },
+        {
+            "col": 32,
+            "file": "steiner-parker-filt-o-matic.jpg",
+            "hp": 10,
+            "id": 40,
+            "row": 0,
+            "tower": 0
+        },
+        {
+            "id": 41,
+            "file": "tune-o-matic.jpg",
+            "hp": 5,
+            "tower": 0,
+            "row": 0,
+            "col": 42
+        },
+        {
+            "id": 42,
+            "file": "valve-caster-o-matic.jpg",
+            "hp": 10,
+            "tower": 0,
+            "row": 1,
+            "col": 47
+        }
+    ]
+}

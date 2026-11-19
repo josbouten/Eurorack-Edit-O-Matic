@@ -1,0 +1,3064 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>BAMR Edit-O-Matic</title>
+
+<style>
+
+    /* =====================================================
+       CONFIGURATION
+    ===================================================== */
+
+    :root {
+        --hp-unit: 12px;
+        --panel-height: 360px;
+
+        --rack-bg: #252525;
+        --row-bg: #353535;
+
+        --accent: #4caf50;
+        --valid: #20d85a;
+        --invalid: #ed3030;
+    }
+
+
+    /* =====================================================
+       GENERAL
+    ===================================================== */
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        padding: 20px;
+
+        background: #171717;
+        color: #eee;
+
+        font-family: Arial, sans-serif;
+    }
+
+
+    /* =====================================================
+       HEADER
+    ===================================================== */
+
+    header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+
+        background: #202020;
+
+        padding: 15px 20px;
+        margin: -20px -20px 20px;
+
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        flex-wrap: wrap;
+        gap: 12px;
+
+        border-bottom: 1px solid #555;
+    }
+
+    .header-title {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    h1 {
+        font-size: 22px;
+        margin: 0;
+    }
+
+    #layoutName {
+        font-size: 30px;
+        font-weight: bold;
+        color: #ffcc00;
+        letter-spacing: 1px;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+
+    .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+    }
+
+    button {
+        background: #444;
+        color: white;
+
+        border: 1px solid #666;
+        border-radius: 4px;
+
+        padding: 10px 16px;
+
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    button:hover {
+        background: #555;
+    }
+
+    button.primary {
+        background: #267c37;
+        border-color: #4caf50;
+    }
+
+    #status {
+        color: #aaa;
+        font-size: 13px;
+        min-width: 180px;
+    }
+
+
+    /* =====================================================
+       MAIN LAYOUT
+    ===================================================== */
+
+    .main {
+        display: flex;
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+
+    /* =====================================================
+       MODULE REPOSITORY
+    ===================================================== */
+
+    .repository {
+        flex: 0 0 340px;
+
+        background: #252525;
+        border: 1px solid #555;
+        border-radius: 5px;
+
+        padding: 12px;
+
+        position: sticky;
+        top: 90px;
+
+        max-height: calc(100vh - 110px);
+
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .repository-search {
+        width: 100%;
+        padding: 9px;
+        margin-bottom: 12px;
+
+        background: #111;
+        color: white;
+
+        border: 1px solid #555;
+    }
+
+    .repository-item {
+        display: flex;
+        align-items: center;
+
+        gap: 12px;
+
+        padding: 8px;
+        margin-bottom: 5px;
+
+        background: #353535;
+
+        border: 1px solid #555;
+        border-radius: 4px;
+
+        cursor: grab;
+
+        white-space: pre-line;
+
+        font-size: 12px;
+
+        min-height: 200px;
+    }
+
+    .repository-item:hover {
+        background: #505050;
+        border-color: var(--accent);
+    }
+
+    .repository-item img {
+        width: 110px;
+        height: 130px;
+
+        object-fit: contain;
+
+        background: #111;
+
+        pointer-events: none;
+
+        flex-shrink: 0;
+    }
+
+    .repository-item span {
+        overflow-wrap: anywhere;
+    }
+
+
+    /* =====================================================
+       REPOSITORY MAGNIFIED IMAGE PREVIEW
+    ===================================================== */
+
+    .image-preview {
+        display: none;
+
+        position: fixed;
+
+        z-index: 2000;
+
+        width: 280px;
+        height: 360px;
+
+        padding: 8px;
+
+        background: #222;
+
+        border: 2px solid #777;
+        border-radius: 5px;
+
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.8);
+
+        pointer-events: none;
+    }
+
+    .image-preview img {
+        width: 100%;
+        height: 100%;
+
+        object-fit: contain;
+
+        background: #111;
+    }
+
+    .image-preview.visible {
+        display: block;
+    }
+
+
+    /* =====================================================
+       RACK CONTAINER
+    ===================================================== */
+
+    .racks {
+        display: flex;
+        align-items: flex-start;
+
+        gap: 25px;
+
+        overflow-x: auto;
+
+        padding-bottom: 30px;
+
+        flex: 1;
+        min-width: 0;
+    }
+
+    .tower {
+        flex: 0 0 auto;
+
+        background: var(--rack-bg);
+
+        border: 2px solid #555;
+        border-radius: 5px;
+
+        padding: 10px;
+    }
+
+    .tower-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        margin-bottom: 10px;
+    }
+
+    .tower-header h2 {
+        font-size: 17px;
+        margin: 0;
+    }
+
+
+    /* =====================================================
+       RACK ROWS
+    ===================================================== */
+
+    .row {
+        position: relative;
+
+        display: grid;
+
+        grid-template-columns:
+            repeat(84, var(--hp-unit));
+
+        width: calc(84 * var(--hp-unit));
+        height: var(--panel-height);
+
+        margin-bottom: 4px;
+
+        background: var(--row-bg);
+
+        border: 1px solid #555;
+
+        overflow: hidden;
+    }
+
+    .row:last-child {
+        margin-bottom: 0;
+    }
+
+    .row-number {
+        position: absolute;
+
+        top: 3px;
+        left: 4px;
+
+        z-index: 5;
+
+        color: rgba(255, 255, 255, 0.35);
+
+        font-size: 11px;
+
+        pointer-events: none;
+    }
+
+
+    /* =====================================================
+       MODULES
+    ===================================================== */
+
+    .module {
+        position: relative;
+
+        min-width: 0;
+        height: 100%;
+
+        overflow: hidden;
+
+        cursor: grab;
+
+        border: 1px solid #555;
+
+        background: #111;
+
+        user-select: none;
+    }
+
+    .module:active {
+        cursor: grabbing;
+    }
+
+    .module:hover {
+        outline: 2px solid white;
+        z-index: 10;
+    }
+
+    .module.dragging {
+        opacity: 0.25;
+    }
+
+    .module img {
+        width: 100%;
+        height: 100%;
+
+        display: block;
+
+        object-fit: fill;
+
+        pointer-events: none;
+    }
+
+
+    /* =====================================================
+       MODULE OCCURRENCE HIGHLIGHTING
+    ===================================================== */
+
+    .repository-item.module-match,
+    .module.module-match {
+        outline: 3px solid #ffcc00;
+        outline-offset: -3px;
+
+        border-color: #ffcc00;
+
+        box-shadow:
+            0 0 8px #ffcc00,
+            0 0 18px rgba(255, 204, 0, 0.7);
+
+        z-index: 14;
+    }
+
+    .repository-item.module-match img,
+    .module.module-match img {
+        filter: brightness(1.25);
+    }
+
+
+    /* =====================================================
+       MODULE INFORMATION
+    ===================================================== */
+
+    .module-info {
+        position: absolute;
+
+        left: 0;
+        right: 0;
+        bottom: 0;
+
+        padding: 4px;
+
+        background: rgba(0, 0, 0, 0.8);
+
+        color: white;
+
+        font-size: 10px;
+        text-align: center;
+
+        opacity: 0;
+
+        pointer-events: none;
+    }
+
+    .module:hover .module-info {
+        opacity: 1;
+    }
+
+
+    /* =====================================================
+       REMOVE MODULE BUTTON
+    ===================================================== */
+
+    .remove-module {
+        position: absolute;
+
+        top: 3px;
+        right: 3px;
+
+        width: 22px;
+        height: 22px;
+
+        padding: 0;
+
+        background: rgba(180, 0, 0, 0.85);
+
+        border: none;
+        border-radius: 3px;
+
+        color: white;
+
+        font-size: 15px;
+
+        cursor: pointer;
+
+        display: none;
+
+        z-index: 20;
+    }
+
+    .module:hover .remove-module {
+        display: block;
+    }
+
+
+    /* =====================================================
+       DRAG PREVIEW
+    ===================================================== */
+
+    .drop-preview {
+        position: absolute;
+
+        top: 0;
+        height: 100%;
+
+        z-index: 50;
+
+        pointer-events: none;
+
+        border: 3px solid var(--valid);
+
+        background: rgba(32, 216, 90, 0.30);
+
+        transition:
+            left 0.06s ease,
+            width 0.06s ease;
+    }
+
+    .drop-preview.valid {
+        border-color: var(--valid);
+        background: rgba(32, 216, 90, 0.30);
+    }
+
+    .drop-preview.invalid {
+        border-color: var(--invalid);
+        background: rgba(237, 48, 48, 0.35);
+    }
+
+    .drop-preview::after {
+        content: attr(data-position);
+
+        position: absolute;
+
+        top: 5px;
+        left: 50%;
+
+        transform: translateX(-50%);
+
+        padding: 4px 7px;
+
+        background: rgba(0, 0, 0, 0.85);
+
+        color: white;
+
+        font-size: 11px;
+
+        white-space: nowrap;
+    }
+
+
+    /* =====================================================
+       LAYOUT SELECTION WINDOW
+    ===================================================== */
+
+    .layout-modal {
+        display: none;
+
+        position: fixed;
+
+        z-index: 1000;
+
+        inset: 0;
+
+        background: rgba(0, 0, 0, 0.8);
+
+        align-items: center;
+        justify-content: center;
+    }
+
+    .layout-modal-content {
+        width: 400px;
+        max-width: 90%;
+
+        padding: 25px;
+
+        background: #252525;
+
+        border: 1px solid #666;
+        border-radius: 6px;
+
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .layout-modal-content h2 {
+        margin-top: 0;
+    }
+
+    .layout-modal-content p {
+        color: #aaa;
+        line-height: 1.5;
+    }
+
+    .layout-modal-content select {
+        width: 100%;
+
+        padding: 12px;
+
+        margin: 15px 0;
+
+        background: #111;
+        color: white;
+
+        border: 1px solid #555;
+    }
+
+    .layout-modal-buttons {
+        display: flex;
+
+        justify-content: space-between;
+
+        gap: 10px;
+    }
+
+
+    /* =====================================================
+       INSTRUCTIONS
+    ===================================================== */
+
+    .instructions {
+        color: #999;
+
+        font-size: 13px;
+
+        margin-top: 20px;
+
+        line-height: 1.6;
+    }
+
+
+    /* =====================================================
+       RESPONSIVE HEADER
+    ===================================================== */
+
+    @media (max-width: 700px) {
+
+        header {
+            align-items: flex-start;
+        }
+
+        .header-title {
+            width: 100%;
+        }
+
+        #layoutName {
+            font-size: 24px;
+        }
+
+        .toolbar {
+            width: 100%;
+        }
+
+    }
+
+</style>
+
+
+</head>
+
+<body>
+
+<!-- =====================================================
+     HEADER
+===================================================== -->
+
+<header>
+
+    <div class="header-title">
+
+        <h1>BAMR Edit-O-Matic</h1>
+
+        <span id="layoutName">Default Layout</span>
+
+    </div>
+
+    <div class="toolbar">
+
+        <button class="primary" onclick="saveLayout()">
+            Save layout
+        </button>
+
+        <button onclick="loadLayout()">
+            Load layout
+        </button>
+
+        <button onclick="exportSVG()">
+            Export SVG
+        </button>
+
+        <button onclick="exportPNG()">
+            Export PNG
+        </button>
+
+        <button onclick="resetLayout()">
+            Reset layout
+        </button>
+
+        <span id="status"></span>
+
+    </div>
+
+</header>
+
+
+<!-- =====================================================
+     MAIN CONTENT
+===================================================== -->
+
+<div class="main">
+
+    <aside class="repository">
+
+        <h2>Module repository</h2>
+
+        <input
+            class="repository-search"
+            id="repositorySearch"
+            placeholder="Search filename or HP..."
+            oninput="renderRepository()"
+        >
+
+        <div id="repositoryItems"></div>
+
+    </aside>
+
+    <div class="racks" id="racks"></div>
+
+</div>
+
+
+<!-- =====================================================
+     MAGNIFIED IMAGE PREVIEW
+===================================================== -->
+
+<div id="imagePreview" class="image-preview">
+
+    <img id="previewImage" src="" alt="Module preview">
+
+</div>
+
+
+<!-- =====================================================
+     LAYOUT SELECTION WINDOW
+===================================================== -->
+
+<div id="layoutModal" class="layout-modal">
+
+    <div class="layout-modal-content">
+
+        <h2>Select rack layout</h2>
+
+        <p>
+            Saved layouts are available.
+            Please select the layout to load.
+        </p>
+
+        <select id="layoutSelect">
+
+            <option value="">
+                -- Select layout --
+            </option>
+
+        </select>
+
+        <div class="layout-modal-buttons">
+
+            <button
+                class="primary"
+                onclick="loadSelectedLayout()"
+            >
+                Load layout
+            </button>
+
+            <button onclick="cancelLayoutSelection()">
+                Cancel
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     INSTRUCTIONS
+===================================================== -->
+
+<div class="instructions">
+
+    <strong>Instructions</strong><br>
+
+    Drag modules from the repository into the rack.<br>
+    Hover over repository images to see a magnified preview.<br>
+    Search the repository by filename or HP value.<br>
+    Drag existing modules between towers and rows.<br>
+    Modules snap to the nearest HP position.<br>
+    Green preview indicates a valid position.<br>
+    Red preview indicates an invalid position.<br>
+    Existing modules never move automatically.<br>
+    Multiple instances of the same module are supported.<br>
+    Use the red X button to remove a module.<br>
+    Empty spaces are preserved.<br>
+    Modules cannot overlap.<br>
+    Each row is limited to the configured HP capacity.
+
+</div>
+
+
+<script>
+
+
+    /* =====================================================
+       1. CONFIGURATION FROM FLASK
+    ===================================================== */
+
+    let modules = {{ modules | default([], true) | tojson }};
+
+    const repository = {{ repository | default([], true) | tojson }};
+
+    const availableLayouts =
+        {{ available_layouts | default([], true) | tojson }};
+
+    const useDefaultLayout =
+        {{ use_default_layout | default(false, true) | tojson }};
+
+    const rackHP = Number(
+        {{ rack_hp | default(84, true) | tojson }}
+    );
+
+    const rackRows = Number(
+        {{ rack_rows | default(3, true) | tojson }}
+    );
+
+    const nrTowers = Number(
+        {{ nr_towers | default(2, true) | tojson }}
+    );
+
+    const hpWidth = Number(
+        {{ hp_width | default(12, true) | tojson }}
+    );
+
+    const panelHeight = Number(
+        {{ panel_height | default(360, true) | tojson }}
+    );
+
+    const rackGap = Number(
+        {{ gap | default(4, true) | tojson }}
+    );
+
+    const rackMargin = Number(
+        {{ margin | default(20, true) | tojson }}
+    );
+
+
+    document.documentElement.style.setProperty(
+        "--hp-unit",
+        hpWidth + "px"
+    );
+
+    document.documentElement.style.setProperty(
+        "--panel-height",
+        panelHeight + "px"
+    );
+
+
+    /* =====================================================
+       2. REPOSITORY DIAGNOSTICS
+    ===================================================== */
+
+    console.log("========== REPOSITORY DIAGNOSTICS ==========");
+
+    console.log(
+        "Repository received from Flask:",
+        repository
+    );
+
+    console.log(
+        "Total repository entries:",
+        Array.isArray(repository) ? repository.length : "NOT AN ARRAY"
+    );
+
+    if (Array.isArray(repository)) {
+
+        console.log(
+            "Entries without filename:",
+            repository.filter(m => !m || !m.file)
+        );
+
+        console.log(
+            "Entries without valid HP:",
+            repository.filter(m =>
+                !m ||
+                !Number.isFinite(Number(m.hp)) ||
+                Number(m.hp) <= 0
+            )
+        );
+
+        const filenameCounts = {};
+
+        repository.forEach(module => {
+
+            if (!module || !module.file) {
+                return;
+            }
+
+            filenameCounts[module.file] =
+                (filenameCounts[module.file] || 0) + 1;
+
+        });
+
+        console.log(
+            "Duplicate filenames:",
+            Object.entries(filenameCounts).filter(
+                ([filename, count]) => count > 1
+            )
+        );
+
+    }
+
+    console.log("============================================");
+
+
+    /* =====================================================
+       3. ORIGINAL LAYOUT AND MODULE IDS
+    ===================================================== */
+
+    let nextModuleId = 1;
+
+    function assignModuleIds(list) {
+
+        list.forEach(module => {
+
+            module.id = nextModuleId++;
+
+            module.hp = Number(module.hp);
+            module.col = Number(module.col);
+            module.row = Number(module.row);
+            module.tower = Number(module.tower);
+
+        });
+
+    }
+
+    assignModuleIds(modules);
+
+    const originalModules = JSON.parse(
+        JSON.stringify(modules)
+    );
+
+
+    /* =====================================================
+       4. STATUS MESSAGE
+    ===================================================== */
+
+    function showStatus(message, error = false) {
+
+        const status = document.getElementById("status");
+
+        status.textContent = message;
+
+        status.style.color = error
+            ? "#ff7777"
+            : "#8fdb91";
+
+        setTimeout(() => {
+
+            status.textContent = "";
+
+        }, 4000);
+
+    }
+
+
+    /* =====================================================
+       5. UPDATE LAYOUT NAME IN HEADER
+    ===================================================== */
+
+    function updateLayoutName(filename) {
+
+        const nameElement = document.getElementById("layoutName");
+
+        if (!filename) {
+
+            nameElement.textContent = "Default Layout";
+
+            return;
+
+        }
+
+        // Remove .json extension.
+
+        const displayName = filename
+            .split(/[\\/]/)
+            .pop()
+            .replace(/\.json$/i, "");
+
+        nameElement.textContent = displayName;
+
+    }
+
+
+    /* =====================================================
+       6. MODULE OCCURRENCE HIGHLIGHTING
+    ===================================================== */
+
+    let selectedModuleFile = null;
+
+
+    function highlightModuleOccurrences(filename) {
+
+        // Toggle highlighting off when clicking the same module.
+
+        if (selectedModuleFile === filename) {
+
+            clearModuleHighlighting();
+
+            return;
+
+        }
+
+        selectedModuleFile = filename;
+
+        // Remove previous highlighting.
+
+        document.querySelectorAll(".module-match").forEach(element => {
+
+            element.classList.remove("module-match");
+
+        });
+
+        // Highlight repository occurrences.
+
+        document.querySelectorAll(".repository-item").forEach(item => {
+
+            if (item.dataset.file === filename) {
+
+                item.classList.add("module-match");
+
+            }
+
+        });
+
+        // Highlight rack occurrences.
+
+        document.querySelectorAll(".module").forEach(item => {
+
+            if (item.dataset.file === filename) {
+
+                item.classList.add("module-match");
+
+            }
+
+        });
+
+        // Count rack occurrences.
+
+        const count = modules.filter(module => {
+
+            return module.file === filename;
+
+        }).length;
+
+        showStatus(
+            `${filename}: ${count} occurrences highlighted.`
+        );
+
+    }
+
+
+    function clearModuleHighlighting() {
+
+        selectedModuleFile = null;
+
+        document.querySelectorAll(".module-match").forEach(element => {
+
+            element.classList.remove("module-match");
+
+        });
+
+    }
+
+
+    /* =====================================================
+       7. REPOSITORY IMAGE PREVIEW
+    ===================================================== */
+
+    const imagePreview = document.getElementById(
+        "imagePreview"
+    );
+
+    const previewImage = document.getElementById(
+        "previewImage"
+    );
+
+
+    function showImagePreview(src, event) {
+
+        previewImage.src = src;
+
+        imagePreview.classList.add("visible");
+
+        moveImagePreview(event);
+
+    }
+
+
+    function moveImagePreview(event) {
+
+        const offset = 20;
+
+        let x = event.clientX + offset;
+        let y = event.clientY + offset;
+
+        const width = 280;
+        const height = 360;
+
+        if (x + width > window.innerWidth) {
+
+            x = event.clientX - width - offset;
+
+        }
+
+        if (y + height > window.innerHeight) {
+
+            y = window.innerHeight - height - 10;
+
+        }
+
+        imagePreview.style.left = x + "px";
+
+        imagePreview.style.top = Math.max(10, y) + "px";
+
+    }
+
+
+    function hideImagePreview() {
+
+        imagePreview.classList.remove("visible");
+
+        previewImage.src = "";
+
+    }
+
+
+    /* =====================================================
+       8. MODULE REPOSITORY
+    ===================================================== */
+
+    function renderRepository() {
+
+        const container = document.getElementById(
+            "repositoryItems"
+        );
+
+        container.innerHTML = "";
+
+        const search = document
+            .getElementById("repositorySearch")
+            .value
+            .trim()
+            .toLowerCase();
+
+        // Validate repository.
+
+        if (!Array.isArray(repository)) {
+
+            console.error(
+                "Repository is not an array:",
+                repository
+            );
+
+            container.textContent =
+                "Repository data is invalid.";
+
+            return;
+
+        }
+
+        // Filter repository without removing duplicates.
+
+        const filteredRepository = repository.filter(module => {
+
+            if (!module || typeof module !== "object") {
+
+                return false;
+
+            }
+
+            const filename = String(
+                module.file ?? ""
+            ).toLowerCase();
+
+            const hp = String(
+                module.hp ?? ""
+            ).toLowerCase();
+
+            if (!search) {
+
+                return true;
+
+            }
+
+            return (
+                filename.includes(search) ||
+                hp.includes(search)
+            );
+
+        });
+
+        console.log(
+            `Displaying ${filteredRepository.length} of ${repository.length} repository entries`
+        );
+
+        // Create repository elements.
+
+        filteredRepository.forEach(module => {
+
+            const item = document.createElement("div");
+
+            item.className = "repository-item";
+
+            item.dataset.file = module.file;
+
+            item.addEventListener("click", () => {
+
+                highlightModuleOccurrences(module.file);
+
+            });
+
+            item.draggable = true;
+
+            const img = document.createElement("img");
+
+            const imageURL =
+                "/images/" +
+                encodeURIComponent(module.file);
+
+            img.src = imageURL;
+
+            img.alt = module.file;
+
+            img.draggable = false;
+
+            // Magnified preview.
+
+            item.addEventListener(
+                "mouseenter",
+                event => {
+
+                    showImagePreview(
+                        imageURL,
+                        event
+                    );
+
+                }
+            );
+
+            item.addEventListener(
+                "mousemove",
+                moveImagePreview
+            );
+
+            item.addEventListener(
+                "mouseleave",
+                hideImagePreview
+            );
+
+            // Repository information.
+
+            const info = document.createElement("span");
+
+            info.textContent =
+                module.file + "\n" +
+                module.hp + " HP";
+
+            item.appendChild(img);
+
+            item.appendChild(info);
+
+            // Drag start.
+
+            item.addEventListener(
+                "dragstart",
+                event => {
+
+                    hideImagePreview();
+
+                    event.dataTransfer.setData(
+                        "application/json",
+
+                        JSON.stringify({
+
+                            type: "repository",
+
+                            file: module.file,
+
+                            hp: Number(module.hp)
+
+                        })
+
+                    );
+
+                    event.dataTransfer.effectAllowed = "copy";
+
+                }
+            );
+
+            // Restore highlighting after repository rendering.
+
+            if (selectedModuleFile === module.file) {
+
+                item.classList.add("module-match");
+
+            }
+
+            container.appendChild(item);
+
+        });
+
+        // No search results.
+
+        if (filteredRepository.length === 0) {
+
+            const message = document.createElement("div");
+
+            message.style.padding = "10px";
+
+            message.style.color = "#aaa";
+
+            message.textContent = "No modules found.";
+
+            container.appendChild(message);
+
+        }
+
+    }
+
+
+    /* =====================================================
+       9. GET MODULES IN ROW
+    ===================================================== */
+
+    function getRowModules(tower, row) {
+
+        return modules
+
+            .filter(module => {
+
+                return (
+                    Number(module.tower) === Number(tower) &&
+                    Number(module.row) === Number(row)
+                );
+
+            })
+
+            .sort((a, b) => {
+
+                return Number(a.col) - Number(b.col);
+
+            });
+
+    }
+
+
+    /* =====================================================
+       10. POSITION VALIDATION
+    ===================================================== */
+
+    function isPositionAvailable(
+        module,
+        tower,
+        row,
+        col
+    ) {
+
+        const hp = Number(module.hp);
+
+        if (
+
+            !Number.isInteger(col) ||
+
+            !Number.isFinite(hp) ||
+
+            hp <= 0 ||
+
+            col < 0 ||
+
+            col + hp > rackHP ||
+
+            tower < 0 ||
+
+            tower >= nrTowers ||
+
+            row < 0 ||
+
+            row >= rackRows
+
+        ) {
+
+            return false;
+
+        }
+
+        return !modules.some(other => {
+
+            if (
+                String(other.id) === String(module.id)
+            ) {
+
+                return false;
+
+            }
+
+            if (
+
+                Number(other.tower) !== tower ||
+
+                Number(other.row) !== row
+
+            ) {
+
+                return false;
+
+            }
+
+            const a1 = col;
+            const a2 = col + hp;
+
+            const b1 = Number(other.col);
+            const b2 = b1 + Number(other.hp);
+
+            return a1 < b2 && a2 > b1;
+
+        });
+
+    }
+
+
+    /* =====================================================
+       11. MOVE MODULE
+    ===================================================== */
+
+    function moveModule(
+        moduleId,
+        tower,
+        row,
+        col
+    ) {
+
+        const module = modules.find(m => {
+
+            return String(m.id) === String(moduleId);
+
+        });
+
+        if (!module) {
+
+            showStatus("Module not found.", true);
+
+            return false;
+
+        }
+
+        col = Math.round(Number(col));
+
+        tower = Number(tower);
+        row = Number(row);
+
+        if (!isPositionAvailable(
+            module,
+            tower,
+            row,
+            col
+        )) {
+
+            showStatus(
+                "Invalid position: overlap or rack boundary.",
+                true
+            );
+
+            return false;
+
+        }
+
+        module.tower = tower;
+        module.row = row;
+        module.col = col;
+
+        renderRack();
+
+        showStatus("Module moved.");
+
+        return true;
+
+    }
+
+
+    /* =====================================================
+       12. ADD MODULE
+    ===================================================== */
+
+    function addModule(
+        file,
+        hp,
+        tower,
+        row,
+        col
+    ) {
+
+        const module = {
+
+            id: nextModuleId++,
+
+            file: file,
+
+            hp: Number(hp),
+
+            tower: Number(tower),
+
+            row: Number(row),
+
+            col: Number(col)
+
+        };
+
+        if (!isPositionAvailable(
+            module,
+            module.tower,
+            module.row,
+            module.col
+        )) {
+
+            showStatus(
+                "Cannot add module: position occupied.",
+                true
+            );
+
+            return false;
+
+        }
+
+        modules.push(module);
+
+        renderRack();
+
+        showStatus("Module added to rack.");
+
+        return true;
+
+    }
+
+
+    /* =====================================================
+       13. REMOVE MODULE
+    ===================================================== */
+
+    function removeModule(moduleId) {
+
+        const index = modules.findIndex(m => {
+
+            return String(m.id) === String(moduleId);
+
+        });
+
+        if (index < 0) {
+
+            return;
+
+        }
+
+        modules.splice(index, 1);
+
+        renderRack();
+
+        showStatus("Module removed.");
+
+    }
+
+
+    /* =====================================================
+       14. DRAG STATE
+    ===================================================== */
+
+    let draggedModuleId = null;
+
+    let currentPreview = null;
+
+
+    /* =====================================================
+       15. DRAG START
+    ===================================================== */
+
+    function handleDragStart(event, module) {
+
+        draggedModuleId = module.id;
+
+        event.dataTransfer.effectAllowed = "move";
+
+        event.dataTransfer.setData(
+            "application/json",
+
+            JSON.stringify({
+
+                type: "rack",
+
+                id: module.id
+
+            })
+
+        );
+
+        event.dataTransfer.setData(
+            "text/plain",
+            String(module.id)
+        );
+
+        event.currentTarget.classList.add("dragging");
+
+    }
+
+
+    /* =====================================================
+       16. DRAG END
+    ===================================================== */
+
+    function handleDragEnd(event) {
+
+        event.currentTarget.classList.remove("dragging");
+
+        draggedModuleId = null;
+
+        removeAllPreviews();
+
+    }
+
+
+    /* =====================================================
+       17. REMOVE ALL DRAG PREVIEWS
+    ===================================================== */
+
+    function removeAllPreviews() {
+
+        document.querySelectorAll(".drop-preview").forEach(
+            preview => preview.remove()
+        );
+
+        document.querySelectorAll(".row").forEach(row => {
+
+            row.classList.remove("drag-over");
+
+        });
+
+        currentPreview = null;
+
+    }
+
+
+    /* =====================================================
+       18. GET DRAGGED MODULE
+    ===================================================== */
+
+    function getDraggedModule(event) {
+
+        let data = null;
+
+        try {
+
+            const jsonData = event.dataTransfer.getData(
+                "application/json"
+            );
+
+            if (jsonData) {
+
+                data = JSON.parse(jsonData);
+
+            }
+
+        } catch (error) {
+
+            console.error("Drag data error:", error);
+
+        }
+
+        // Existing rack module.
+
+        if (data && data.type === "rack") {
+
+            const module = modules.find(m => {
+
+                return String(m.id) === String(data.id);
+
+            });
+
+            if (!module) {
+
+                return null;
+
+            }
+
+            return {
+
+                type: "rack",
+
+                id: data.id,
+
+                hp: Number(module.hp),
+
+                module: module
+
+            };
+
+        }
+
+        // Repository module.
+
+        if (data && data.type === "repository") {
+
+            return {
+
+                type: "repository",
+
+                file: data.file,
+
+                hp: Number(data.hp),
+
+                module: {
+
+                    hp: Number(data.hp)
+
+                }
+
+            };
+
+        }
+
+        // Fallback for existing rack modules.
+
+        if (!data) {
+
+            const id = event.dataTransfer.getData(
+                "text/plain"
+            );
+
+            if (id) {
+
+                const module = modules.find(m => {
+
+                    return String(m.id) === String(id);
+
+                });
+
+                if (module) {
+
+                    return {
+
+                        type: "rack",
+
+                        id: id,
+
+                        hp: Number(module.hp),
+
+                        module: module
+
+                    };
+
+                }
+
+            }
+
+        }
+
+        return null;
+
+    }
+
+
+    /* =====================================================
+       19. MAGNETIC POSITION CALCULATION
+    ===================================================== */
+
+    function calculateDropPosition(
+        event,
+        rowElement,
+        hp
+    ) {
+
+        const rect = rowElement.getBoundingClientRect();
+
+        const style = getComputedStyle(rowElement);
+
+        const borderLeft = parseFloat(
+            style.borderLeftWidth
+        ) || 0;
+
+        const borderRight = parseFloat(
+            style.borderRightWidth
+        ) || 0;
+
+        const usableWidth =
+            rect.width - borderLeft - borderRight;
+
+        const relativeX =
+            event.clientX -
+            rect.left -
+            borderLeft;
+
+        const rawCol =
+            (relativeX / usableWidth) * rackHP;
+
+        const snappedCol = Math.round(rawCol);
+
+        return Math.max(
+            0,
+            Math.min(rackHP - hp, snappedCol)
+        );
+
+    }
+
+
+    /* =====================================================
+       20. UPDATE DRAG PREVIEW
+    ===================================================== */
+
+    function updateDragPreview(
+        event,
+        tower,
+        row
+    ) {
+
+        const rowElement = event.currentTarget;
+
+        const dragged = getDraggedModule(event);
+
+        if (!dragged) {
+
+            return;
+
+        }
+
+        const hp = dragged.hp;
+
+        const col = calculateDropPosition(
+            event,
+            rowElement,
+            hp
+        );
+
+        const valid = isPositionAvailable(
+            dragged.module,
+            Number(tower),
+            Number(row),
+            col
+        );
+
+        document.querySelectorAll(".drop-preview").forEach(
+            preview => preview.remove()
+        );
+
+        const preview = document.createElement("div");
+
+        preview.className = "drop-preview";
+
+        preview.classList.add(
+            valid ? "valid" : "invalid"
+        );
+
+        preview.dataset.position =
+            `${col}–${col + hp} HP`;
+
+        preview.style.left =
+            (col * hpWidth) + "px";
+
+        preview.style.width =
+            (hp * hpWidth) + "px";
+
+        rowElement.appendChild(preview);
+
+        rowElement.classList.add("drag-over");
+
+        currentPreview = {
+
+            tower: Number(tower),
+
+            row: Number(row),
+
+            col: col,
+
+            hp: hp,
+
+            valid: valid,
+
+            element: preview
+
+        };
+
+        event.dataTransfer.dropEffect = valid
+            ? (
+                dragged.type === "repository"
+                    ? "copy"
+                    : "move"
+            )
+            : "none";
+
+    }
+
+
+    /* =====================================================
+       21. DRAG OVER
+    ===================================================== */
+
+    function handleDragOver(
+        event,
+        tower,
+        row
+    ) {
+
+        event.preventDefault();
+
+        updateDragPreview(
+            event,
+            tower,
+            row
+        );
+
+    }
+
+
+    /* =====================================================
+       22. DRAG LEAVE
+    ===================================================== */
+
+    function handleDragLeave(event) {
+
+        if (
+            !event.currentTarget.contains(
+                event.relatedTarget
+            )
+        ) {
+
+            event.currentTarget
+                .querySelectorAll(".drop-preview")
+                .forEach(preview => {
+
+                    preview.remove();
+
+                });
+
+            event.currentTarget.classList.remove(
+                "drag-over"
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       23. DROP MODULE
+    ===================================================== */
+
+    function handleDrop(
+        event,
+        tower,
+        row
+    ) {
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const rowElement = event.currentTarget;
+
+        const dragged = getDraggedModule(event);
+
+        if (!dragged) {
+
+            removeAllPreviews();
+
+            return;
+
+        }
+
+        const hp = dragged.hp;
+
+        const col = calculateDropPosition(
+            event,
+            rowElement,
+            hp
+        );
+
+        const valid = isPositionAvailable(
+            dragged.module,
+            Number(tower),
+            Number(row),
+            col
+        );
+
+        if (!valid) {
+
+            showStatus(
+                "Invalid position: overlap or rack boundary.",
+                true
+            );
+
+            removeAllPreviews();
+
+            return;
+
+        }
+
+        if (dragged.type === "repository") {
+
+            addModule(
+                dragged.file,
+                dragged.hp,
+                tower,
+                row,
+                col
+            );
+
+        }
+
+        else if (dragged.type === "rack") {
+
+            moveModule(
+                dragged.id,
+                tower,
+                row,
+                col
+            );
+
+        }
+
+        removeAllPreviews();
+
+    }
+
+
+    /* =====================================================
+       24. CREATE MODULE ELEMENT
+    ===================================================== */
+
+    function createModuleElement(module) {
+
+        const element = document.createElement("div");
+
+        element.className = "module";
+
+        element.dataset.file = module.file;
+
+        // Clicking a module highlights all its occurrences.
+
+        element.addEventListener("click", event => {
+
+            if (event.target.closest(".remove-module")) {
+
+                return;
+
+            }
+
+            highlightModuleOccurrences(module.file);
+
+        });
+
+        element.draggable = true;
+
+        element.style.gridColumn =
+            `${Number(module.col) + 1} / span ${Number(module.hp)}`;
+
+        element.title =
+            `${module.file}\n` +
+            `${module.hp} HP\n` +
+            `Tower: ${Number(module.tower) + 1}\n` +
+            `Row: ${Number(module.row) + 1}\n` +
+            `Column: ${module.col}`;
+
+        // Module image.
+
+        const img = document.createElement("img");
+
+        img.src =
+            "/images/" +
+            encodeURIComponent(module.file);
+
+        img.alt = module.file;
+
+        img.draggable = false;
+
+        img.onerror = function() {
+
+            this.style.display = "none";
+
+            element.style.background = "#622";
+
+        };
+
+        element.appendChild(img);
+
+        // Module information.
+
+        const info = document.createElement("div");
+
+        info.className = "module-info";
+
+        info.textContent =
+            `${module.file} | ${module.hp} HP`;
+
+        element.appendChild(info);
+
+        // Remove button.
+
+        const remove = document.createElement("button");
+
+        remove.className = "remove-module";
+
+        remove.textContent = "×";
+
+        remove.title = "Remove module";
+
+        remove.addEventListener("click", event => {
+
+            event.stopPropagation();
+
+            removeModule(module.id);
+
+        });
+
+        element.appendChild(remove);
+
+        // Drag events.
+
+        element.addEventListener("dragstart", event => {
+
+            handleDragStart(event, module);
+
+        });
+
+        element.addEventListener(
+            "dragend",
+            handleDragEnd
+        );
+
+        // Restore highlighting after rack rendering.
+
+        if (selectedModuleFile === module.file) {
+
+            element.classList.add("module-match");
+
+        }
+
+        return element;
+
+    }
+
+
+    /* =====================================================
+       25. RENDER RACK
+    ===================================================== */
+
+    function renderRack() {
+
+        const container = document.getElementById("racks");
+
+        container.innerHTML = "";
+
+        for (
+            let tower = 0;
+            tower < nrTowers;
+            tower++
+        ) {
+
+            const towerElement =
+                document.createElement("div");
+
+            towerElement.className = "tower";
+
+            // Tower heading.
+
+            const heading =
+                document.createElement("div");
+
+            heading.className = "tower-header";
+
+            const title =
+                document.createElement("h2");
+
+            title.textContent =
+                `Tower ${tower + 1}`;
+
+            const subtitle =
+                document.createElement("span");
+
+            subtitle.textContent =
+                `${rackHP} HP`;
+
+            heading.appendChild(title);
+
+            heading.appendChild(subtitle);
+
+            towerElement.appendChild(heading);
+
+            // Create rows.
+
+            for (
+                let row = 0;
+                row < rackRows;
+                row++
+            ) {
+
+                const rowElement =
+                    document.createElement("div");
+
+                rowElement.className = "row";
+
+                rowElement.style.gridTemplateColumns =
+                    `repeat(${rackHP}, ${hpWidth}px)`;
+
+                rowElement.style.width =
+                    `${rackHP * hpWidth}px`;
+
+                rowElement.dataset.tower = tower;
+
+                rowElement.dataset.row = row;
+
+                // Row number.
+
+                const rowNumber =
+                    document.createElement("span");
+
+                rowNumber.className = "row-number";
+
+                rowNumber.textContent =
+                    `ROW ${row + 1}`;
+
+                rowElement.appendChild(rowNumber);
+
+                // Add modules.
+
+                getRowModules(tower, row).forEach(module => {
+
+                    rowElement.appendChild(
+                        createModuleElement(module)
+                    );
+
+                });
+
+                // Drag events.
+
+                rowElement.addEventListener(
+                    "dragover",
+                    event => handleDragOver(
+                        event,
+                        tower,
+                        row
+                    )
+                );
+
+                rowElement.addEventListener(
+                    "dragleave",
+                    handleDragLeave
+                );
+
+                rowElement.addEventListener(
+                    "drop",
+                    event => handleDrop(
+                        event,
+                        tower,
+                        row
+                    )
+                );
+
+                towerElement.appendChild(rowElement);
+
+            }
+
+            container.appendChild(towerElement);
+
+        }
+
+    }
+
+
+    /* =====================================================
+       26. SAVE LAYOUT
+    ===================================================== */
+
+    async function saveLayout() {
+
+        let filename = prompt(
+            "Enter layout filename:",
+            "rack_layout.json"
+        );
+
+        if (!filename) {
+
+            return;
+
+        }
+
+        filename = filename.trim();
+
+        if (!filename) {
+
+            return;
+
+        }
+
+        if (!filename.toLowerCase().endsWith(".json")) {
+
+            filename += ".json";
+
+        }
+
+        try {
+
+            const response = await fetch(
+                "/save_layout",
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        filename: filename,
+
+                        modules: modules
+
+                    })
+
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+
+                throw new Error(
+                    result.message || "Save failed."
+                );
+
+            }
+
+            // Update header with the saved filename.
+
+            updateLayoutName(filename);
+
+            showStatus(
+                result.message || "Layout saved."
+            );
+
+        } catch (error) {
+
+            showStatus(
+                "Save error: " + error.message,
+                true
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       27. LOAD LAYOUT
+    ===================================================== */
+
+    async function loadLayout() {
+
+        try {
+
+            const response = await fetch(
+                "/list_layouts"
+            );
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Could not list layouts."
+                );
+
+            }
+
+            const files = await response.json();
+
+            if (!files.length) {
+
+                alert("No saved layouts found.");
+
+                return;
+
+            }
+
+            const filename = prompt(
+                "Available layouts:\n\n" +
+                files.join("\n") +
+                "\n\nEnter filename:",
+                files[0]
+            );
+
+            if (!filename) {
+
+                return;
+
+            }
+
+            await loadLayoutFile(filename);
+
+        } catch (error) {
+
+            showStatus(
+                "Load error: " + error.message,
+                true
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       28. LOAD LAYOUT FILE
+    ===================================================== */
+
+    async function loadLayoutFile(filename) {
+
+        const response = await fetch(
+            "/load_layout/" +
+            encodeURIComponent(filename)
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+
+            throw new Error(
+                result.message || "Could not load layout."
+            );
+
+        }
+
+        modules = result.modules || [];
+
+        assignModuleIds(modules);
+
+        renderRack();
+
+        // Update header with the loaded filename.
+
+        updateLayoutName(filename);
+
+        showStatus("Layout loaded successfully.");
+
+    }
+
+
+    /* =====================================================
+       29. LAYOUT SELECTION WINDOW
+    ===================================================== */
+
+    function showLayoutSelection() {
+
+        const modal = document.getElementById(
+            "layoutModal"
+        );
+
+        const select = document.getElementById(
+            "layoutSelect"
+        );
+
+        select.innerHTML = "";
+
+        availableLayouts.forEach(filename => {
+
+            const option = document.createElement("option");
+
+            option.value = filename;
+
+            option.textContent = filename;
+
+            select.appendChild(option);
+
+        });
+
+        modal.style.display = "flex";
+
+    }
+
+
+    /* =====================================================
+       30. LOAD SELECTED LAYOUT
+    ===================================================== */
+
+    async function loadSelectedLayout() {
+
+        const filename = document.getElementById(
+            "layoutSelect"
+        ).value;
+
+        if (!filename) {
+
+            alert("Please select a layout.");
+
+            return;
+
+        }
+
+        try {
+
+            await loadLayoutFile(filename);
+
+            document.getElementById(
+                "layoutModal"
+            ).style.display = "none";
+
+        } catch (error) {
+
+            showStatus(
+                "Load error: " + error.message,
+                true
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       31. CANCEL LAYOUT SELECTION
+    ===================================================== */
+
+    function cancelLayoutSelection() {
+
+        document.getElementById(
+            "layoutModal"
+        ).style.display = "none";
+
+        modules = [];
+
+        renderRack();
+
+        updateLayoutName("Default Layout");
+
+        showStatus("No layout selected.");
+
+    }
+
+
+    /* =====================================================
+       32. RESET LAYOUT
+    ===================================================== */
+
+    function resetLayout() {
+
+        if (!confirm(
+            "Reset to the original rack layout?"
+        )) {
+
+            return;
+
+        }
+
+        modules = JSON.parse(
+            JSON.stringify(originalModules)
+        );
+
+        assignModuleIds(modules);
+
+        renderRack();
+
+        // Restore default layout name.
+
+        updateLayoutName("Default Layout");
+
+        showStatus(
+            "Original layout restored."
+        );
+
+    }
+
+
+    /* =====================================================
+       33. EXPORT FILENAME WITH DATE AND TIME
+    ===================================================== */
+
+    function getExportFilename(extension) {
+
+        const now = new Date();
+
+        const timestamp =
+
+            now.getFullYear() +
+
+            String(now.getMonth() + 1).padStart(2, "0") +
+
+            String(now.getDate()).padStart(2, "0") +
+
+            "_" +
+
+            String(now.getHours()).padStart(2, "0") +
+
+            String(now.getMinutes()).padStart(2, "0") +
+
+            String(now.getSeconds()).padStart(2, "0");
+
+        return `BAMR_Overview_${timestamp}.${extension}`;
+
+    }
+
+
+    /* =====================================================
+       34. IMAGE TO BASE64
+    ===================================================== */
+
+    async function imageToBase64(url) {
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Could not load image: " + url
+            );
+
+        }
+
+        const blob = await response.blob();
+
+        return new Promise((resolve, reject) => {
+
+            const reader = new FileReader();
+
+            reader.onload = () => {
+
+                resolve(reader.result);
+
+            };
+
+            reader.onerror = reject;
+
+            reader.readAsDataURL(blob);
+
+        });
+
+    }
+
+
+    /* =====================================================
+       35. GENERATE SVG
+    ===================================================== */
+
+    async function generateSVG() {
+
+        const towerWidth =
+            rackHP * hpWidth;
+
+        const towerGap =
+            rackMargin;
+
+        const svgWidth =
+
+            2 * rackMargin +
+
+            nrTowers * towerWidth +
+
+            (nrTowers - 1) * towerGap;
+
+        const svgHeight =
+
+            2 * rackMargin +
+
+            rackRows * panelHeight +
+
+            (rackRows - 1) * rackGap;
+
+        const parts = [];
+
+        parts.push(
+            `<svg xmlns="http://www.w3.org/2000/svg"
+            width="${svgWidth}"
+            height="${svgHeight}"
+            viewBox="0 0 ${svgWidth} ${svgHeight}">`
+        );
+
+        parts.push(
+            `<rect width="100%" height="100%" fill="#222"/>`
+        );
+
+        const imageCache = new Map();
+
+        // Draw towers.
+
+        for (
+            let tower = 0;
+            tower < nrTowers;
+            tower++
+        ) {
+
+            const towerX =
+
+                rackMargin +
+
+                tower * (towerWidth + towerGap);
+
+            parts.push(
+                `<rect x="${towerX}" y="${rackMargin}"
+                width="${towerWidth}"
+                height="${svgHeight - 2 * rackMargin}"
+                fill="#333"
+                stroke="#555"/>`
+            );
+
+        }
+
+        // Draw modules.
+
+        for (const module of modules) {
+
+            const tower = Number(module.tower);
+
+            const row = Number(module.row);
+
+            const col = Number(module.col);
+
+            const hp = Number(module.hp);
+
+            if (
+
+                tower < 0 ||
+
+                tower >= nrTowers ||
+
+                row < 0 ||
+
+                row >= rackRows ||
+
+                col < 0 ||
+
+                hp <= 0 ||
+
+                col + hp > rackHP
+
+            ) {
+
+                throw new Error(
+                    "Invalid module position: " + module.file
+                );
+
+            }
+
+            const x =
+
+                rackMargin +
+
+                tower * (towerWidth + towerGap) +
+
+                col * hpWidth;
+
+            const y =
+
+                rackMargin +
+
+                row * (panelHeight + rackGap);
+
+            const width =
+                hp * hpWidth;
+
+            let imageData;
+
+            if (imageCache.has(module.file)) {
+
+                imageData = imageCache.get(module.file);
+
+            } else {
+
+                imageData = await imageToBase64(
+                    "/images/" +
+                    encodeURIComponent(module.file)
+                );
+
+                imageCache.set(
+                    module.file,
+                    imageData
+                );
+
+            }
+
+            parts.push(
+                `<image x="${x}" y="${y}"
+                width="${width}"
+                height="${panelHeight}"
+                href="${imageData}"
+                preserveAspectRatio="none"/>`
+            );
+
+            parts.push(
+                `<rect x="${x}" y="${y}"
+                width="${width}"
+                height="${panelHeight}"
+                fill="none"
+                stroke="#555"/>`
+            );
+
+        }
+
+        parts.push("</svg>");
+
+        return parts.join("\n");
+
+    }
+
+
+    /* =====================================================
+       36. EXPORT SVG
+    ===================================================== */
+
+    async function exportSVG() {
+
+        try {
+
+            showStatus("Generating SVG...");
+
+            const content = await generateSVG();
+
+            const blob = new Blob(
+                [content],
+                {
+                    type: "image/svg+xml;charset=utf-8"
+                }
+            );
+
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement("a");
+
+            link.href = url;
+
+            link.download = getExportFilename("svg");
+
+            link.click();
+
+            setTimeout(() => {
+
+                URL.revokeObjectURL(url);
+
+            }, 1000);
+
+            showStatus(
+                "SVG exported successfully."
+            );
+
+        } catch (error) {
+
+            showStatus(
+                "SVG export failed: " + error.message,
+                true
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       37. EXPORT PNG
+    ===================================================== */
+
+    async function exportPNG() {
+
+        let svgURL;
+
+        try {
+
+            showStatus("Generating PNG...");
+
+            const content = await generateSVG();
+
+            const blob = new Blob(
+                [content],
+                {
+                    type: "image/svg+xml;charset=utf-8"
+                }
+            );
+
+            svgURL = URL.createObjectURL(blob);
+
+            const image = new Image();
+
+            image.onload = function() {
+
+                try {
+
+                    const parser = new DOMParser();
+
+                    const svg = parser.parseFromString(
+                        content,
+                        "image/svg+xml"
+                    ).documentElement;
+
+                    const width = Number(
+                        svg.getAttribute("width")
+                    );
+
+                    const height = Number(
+                        svg.getAttribute("height")
+                    );
+
+                    const canvas =
+                        document.createElement("canvas");
+
+                    const scale = 2;
+
+                    canvas.width = width * scale;
+
+                    canvas.height = height * scale;
+
+                    const ctx = canvas.getContext("2d");
+
+                    ctx.scale(scale, scale);
+
+                    ctx.drawImage(
+                        image,
+                        0,
+                        0,
+                        width,
+                        height
+                    );
+
+                    canvas.toBlob(pngBlob => {
+
+                        if (!pngBlob) {
+
+                            showStatus(
+                                "PNG conversion failed.",
+                                true
+                            );
+
+                            URL.revokeObjectURL(svgURL);
+
+                            return;
+
+                        }
+
+                        const pngURL =
+                            URL.createObjectURL(pngBlob);
+
+                        const link =
+                            document.createElement("a");
+
+                        link.href = pngURL;
+
+                        link.download = getExportFilename("png");
+
+                        link.click();
+
+                        setTimeout(() => {
+
+                            URL.revokeObjectURL(pngURL);
+
+                            URL.revokeObjectURL(svgURL);
+
+                        }, 1000);
+
+                        showStatus(
+                            "PNG exported successfully."
+                        );
+
+                    }, "image/png");
+
+                } catch (error) {
+
+                    URL.revokeObjectURL(svgURL);
+
+                    showStatus(
+                        "PNG export failed: " +
+                        error.message,
+                        true
+                    );
+
+                }
+
+            };
+
+            image.onerror = function() {
+
+                URL.revokeObjectURL(svgURL);
+
+                showStatus(
+                    "Could not render SVG as PNG.",
+                    true
+                );
+
+            };
+
+            image.src = svgURL;
+
+        } catch (error) {
+
+            if (svgURL) {
+
+                URL.revokeObjectURL(svgURL);
+
+            }
+
+            showStatus(
+                "PNG export failed: " +
+                error.message,
+                true
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       38. INITIALIZATION
+    ===================================================== */
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        function() {
+
+            renderRepository();
+
+            renderRack();
+
+            // Set initial header name.
+
+            updateLayoutName("Default Layout");
+
+            // If saved layouts exist, ask the user.
+
+            if (
+                !useDefaultLayout &&
+                availableLayouts.length > 0
+            ) {
+
+                showLayoutSelection();
+
+            }
+
+            console.log(
+                "BAMR Edit-O-Matic initialized."
+            );
+
+            console.log(
+                "Modules:",
+                modules.length
+            );
+
+            console.log(
+                "Repository:",
+                repository.length
+            );
+
+            console.log(
+                "Available layouts:",
+                availableLayouts.length
+            );
+
+            console.log(
+                "Using default layout:",
+                useDefaultLayout
+            );
+
+        }
+    );
+
+</script>
+
+
+</body>
+
+</html>
